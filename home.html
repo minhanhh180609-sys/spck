@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Home</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="homestyle.css" />
+  </head>
+
+  <body>
+    <!-- NAVBAR -->
+    <div class="navbar">
+      <div>abcd</div>
+
+      <div class="nav-right">
+        <!-- SEARCH -->
+        <div class="search-box">
+          <input type="email" id="searchEmail" placeholder="Search email..." />
+          <button id="btnSearch">Search</button>
+        </div>
+
+        <div>Xin chào</div>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- SIDEBAR -->
+      <div class="sidebar">
+        <div class="menu active" onclick="showPage('home', this)">Home</div>
+        <!-- <div class="menu" onclick="showPage('graph', this)">a</div>
+        <div class="menu" onclick="showPage('calc', this)">b</div> -->
+        <div
+          class="menu"
+          onclick="showPage('friendList', this)"
+          id="friendList"
+        >
+          <!-- Danh sách bạn bè sẽ hiển thị ở đây -->
+        </div>
+      </div>
+
+      <!-- CONTENT -->
+      <div class="content">
+        <!-- HOME -->
+        <div id="home" class="page active">
+          <h2>Home</h2>
+          <div class="card">Welcome</div>
+        </div>
+
+        <!-- a -->
+        <!-- <div id="a" class="page">
+          <h2>a</h2>
+        </div> -->
+
+        <!-- b -->
+        <!-- <div id="b" class="page">
+          <h2>b</h2>
+        </div> -->
+
+        <!-- KHUNG CHAT -->
+        <div id="friendList" class="page">
+          <div class="chat-area">
+            <div class="messages-container" id="messagesContainer"></div>
+            <div class="input-area">
+              <input
+                type="text"
+                id="msgInput"
+                placeholder="Nhập tin nhắn..."
+                disabled
+              />
+              <button id="btnSend" disabled>Gửi</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">© 2026 - UI đồng bộ login ✔</div>
+
+    <script>
+      // CẤU HÌNH FIREBASE CỦA BẠN
+      const firebaseConfig = {
+        apiKey: "AIzaSyBVbNvpjsSjSyGTn5Kvk5iaAi0S2KvF5Ks",
+        authDomain: "jsi04-c3a8c.firebaseapp.com",
+        projectId: "jsi04-c3a8c",
+        storageBucket: "jsi04-c3a8c.firebasestorage.app",
+        messagingSenderId: "241743024495",
+        appId: "1:241743024495:web:31c9c9cf6cc87fb757d89a",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getDatabase(app);
+
+      let currentUserId = null;
+      let activeFriendId = null;
+      let currentRoomId = null;
+      let currentChatListenRef = null; // Dùng để hủy lắng nghe khi đổi phòng chat
+      // Kiểm tra trạng thái đăng nhập
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          currentUserId = user.uid;
+          loadFriendList(); // Tải danh sách bạn bè
+        } else {
+          // Nếu chưa đăng nhập thì đá về trang login của bạn
+          window.location.href = "index.html";
+        }
+      });
+
+      // main container
+      function showPage(id, el) {
+        document
+          .querySelectorAll(".page")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+
+        document
+          .querySelectorAll(".menu")
+          .forEach((m) => m.classList.remove("active"));
+        el.classList.add("active");
+      }
+
+      // 1. CHỨC NĂNG TÌM KIẾM & KẾT BẠN QUA EMAIL (BẢN CẬP NHẬT CHUẨN)
+      document
+        .getElementById("btnSearch")
+        .addEventListener("click", async () => {
+          const emailToSearch = document
+            .getElementById("searchEmail")
+            .value.trim()
+            .toLowerCase(); // Chuyển về chữ thường để tránh lỗi viết hoa
+          if (!emailToSearch) {
+            alert("Vui lòng nhập email!");
+            return;
+          }
+
+          try {
+            const usersRef = ref(db, "users");
+            const snapshot = await get(usersRef);
+
+            if (!snapshot.exists()) {
+              alert("Hệ thống chưa có người dùng nào cả!");
+              return;
+            }
+
+            let foundUser = null;
+
+            // Duyệt qua toàn bộ danh sách users để tìm email trùng khớp
+            snapshot.forEach((childSnapshot) => {
+              const userData = childSnapshot.val();
+              if (
+                userData.email &&
+                userData.email.toLowerCase() === emailToSearch
+              ) {
+                foundUser = userData;
+              }
+            });
+
+            if (foundUser) {
+              if (foundUser.uid === currentUserId) {
+                alert("Bạn không thể kết bạn với chính mình!");
+                return;
+              }
+
+              // Thêm vào danh sách bạn bè của mình
+              await set(
+                ref(db, `users/${currentUserId}/friends/${foundUser.uid}`),
+                true,
+              );
+              // Thêm mình vào danh sách bạn bè của người đó (Kết bạn 2 chiều)
+              await set(
+                ref(db, `users/${foundUser.uid}/friends/${currentUserId}`),
+                true,
+              );
+
+              alert(`Đã kết bạn thành công với ${foundUser.username}!`);
+              document.getElementById("searchEmail").value = "";
+
+              // Tải lại danh sách bạn bè để hiển thị người mới lên màn hình ngay lập tức
+              loadFriendList();
+            } else {
+              alert(
+                "Không tìm thấy tài khoản nào có email này! Hãy chắc chắn rằng họ đã đăng ký tài khoản.",
+              );
+            }
+          } catch (error) {
+            console.error("Lỗi khi tìm kiếm:", error);
+            alert("Có lỗi xảy ra khi tìm kiếm người dùng.");
+          }
+        });
+
+      // 2. TẢI DANH SÁCH BẠN BÈ
+      async function loadFriendList() {
+        const friendListDiv = document.getElementById("friendList");
+        friendListDiv.innerHTML = "";
+
+        const myFriendsRef = ref(db, `users/${currentUserId}/friends`);
+        const snapshot = await get(myFriendsRef);
+
+        if (!snapshot.exists()) {
+          friendListDiv.innerHTML =
+            '<p style="padding:15px; color:#888;">Chưa có bạn bè. Hãy kết bạn bằng email!</p>';
+          return;
+        }
+
+        snapshot.forEach(async (childSnapshot) => {
+          const friendUid = childSnapshot.key;
+          // Lấy thông tin chi tiết tên của người bạn đó
+          const friendInfoDoc = await get(ref(db, `users/${friendUid}`));
+          const friendData = friendInfoDoc.val();
+
+          const item = document.createElement("div");
+          item.classList.add("friend-item");
+          item.innerText = friendData.username;
+          item.addEventListener("click", () => openChatBox(friendData));
+          friendListDiv.appendChild(item);
+        });
+      }
+      // 3. MỞ KHUNG CHAT VỚI MỘT NGƯỜI BẠN
+      function openChatBox(friendData) {
+        activeFriendId = friendData.uid;
+        document.getElementById("chatHeader").innerText =
+          "Đang chat với: " + friendData.username;
+
+        // Kích hoạt ô nhập liệu
+        document.getElementById("msgInput").disabled = false;
+        document.getElementById("btnSend").disabled = false;
+
+        // Xóa highlight ở các bạn khác, thêm vào bạn hiện tại
+        document
+          .querySelectorAll(".friend-item")
+          .forEach((el) => el.classList.remove("active"));
+        event.target.classList.add("active");
+
+        // Tạo Room ID duy nhất giữa 2 người (Sắp xếp ID theo thứ tự alphabet)
+        currentRoomId =
+          currentUserId < activeFriendId
+            ? `${currentUserId}_${activeFriendId}`
+            : `${activeFriendId}_${currentUserId}`;
+
+        // Xóa tin nhắn cũ trên giao diện
+        const container = document.getElementById("messagesContainer");
+        container.innerHTML = "";
+
+        // Hủy lắng nghe phòng chat cũ (nếu có) trước khi mở phòng mới
+        if (currentChatListenRef) {
+          off(currentChatListenRef);
+        }
+
+        // Lắng nghe tin nhắn realtime của phòng chat mới
+        currentChatListenRef = ref(db, `chats/${currentRoomId}/messages`);
+        onChildAdded(currentChatListenRef, (snapshot) => {
+          const msgData = snapshot.val();
+          displayMessage(msgData.text, msgData.sender);
+        });
+      }
+
+      // Hàm hiển thị tin nhắn lên màn hình
+      function displayMessage(text, senderId) {
+        const container = document.getElementById("messagesContainer");
+        const msgDiv = document.createElement("div");
+        msgDiv.classList.add("msg");
+
+        if (senderId === currentUserId) {
+          msgDiv.classList.add("sent");
+        } else {
+          msgDiv.classList.add("received");
+        }
+
+        msgDiv.innerText = text;
+        container.appendChild(msgDiv);
+        container.scrollTop = container.scrollHeight;
+      }
+
+      // 4. LOGIC GỬI TIN NHẮN
+      function sendChatMessage() {
+        const text = document.getElementById("msgInput").value.trim();
+        if (!text || !currentRoomId) return;
+
+        const messagesRef = ref(db, `chats/${currentRoomId}/messages`);
+        push(messagesRef, {
+          sender: currentUserId,
+          text: text,
+          timestamp: Date.now(),
+        });
+
+        document.getElementById("msgInput").value = "";
+      }
+
+      document
+        .getElementById("btnSend")
+        .addEventListener("click", sendChatMessage);
+      document.getElementById("msgInput").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendChatMessage();
+      });
+    </script>
+  </body>
+</html>

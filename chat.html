@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Chat nhóm (Firebase Realtime)</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        margin: 0;
+        height: 100vh;
+        display: flex;
+      }
+      .sidebar {
+        width: 260px;
+        border-right: 1px solid #ddd;
+        padding: 12px;
+        box-sizing: border-box;
+      }
+      .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      .groups {
+        margin-bottom: 12px;
+      }
+      .group-item {
+        padding: 8px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .group-item.active {
+        background: #0078d4;
+        color: #fff;
+      }
+      .messages {
+        flex: 1;
+        padding: 12px;
+        overflow: auto;
+        background: #f7f7f7;
+      }
+      .message {
+        margin-bottom: 8px;
+        padding: 8px;
+        border-radius: 6px;
+        background: #fff;
+        box-shadow: 0 0 0 1px #eee inset;
+      }
+      .message .meta {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 6px;
+      }
+      .composer {
+        display: flex;
+        padding: 12px;
+        border-top: 1px solid #ddd;
+      }
+      .composer input[type="text"] {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        margin-right: 8px;
+      }
+      .composer button {
+        padding: 8px 12px;
+      }
+      .topbar {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div id="authSection">
+        <div id="signedOutSection">
+          <div style="margin-bottom: 8px">
+            <label>Email:</label>
+            <input
+              id="authEmail"
+              type="email"
+              placeholder="Nhập email"
+              style="
+                width: 100%;
+                padding: 6px;
+                margin-top: 6px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div style="margin-bottom: 8px">
+            <label>Mật khẩu:</label>
+            <input
+              id="authPassword"
+              type="password"
+              placeholder="Nhập mật khẩu"
+              style="
+                width: 100%;
+                padding: 6px;
+                margin-top: 6px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div style="display: flex; gap: 8px">
+            <button id="signInBtn">Đăng nhập</button>
+            <button id="registerBtn">Đăng ký</button>
+          </div>
+        </div>
+
+        <div id="signedInSection" style="display: none; margin-top: 12px">
+          <div>Đăng nhập với:</div>
+          <strong id="signedInName">...</strong>
+          <div style="margin-top: 6px">
+            Vai trò: <span id="userRoleLabel">...</span>
+          </div>
+          <button id="signOutBtn" style="margin-top: 10px; width: 100%">
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px">
+        <div style="display: flex; gap: 8px">
+          <input
+            id="newGroupName"
+            type="text"
+            placeholder="Tạo nhóm mới"
+            style="flex: 1; padding: 6px"
+          />
+          <button id="createGroupBtn">Tạo</button>
+        </div>
+      </div>
+      <hr />
+      <div class="groups" id="groupsList">
+        <!-- danh sách nhóm sẽ ở đây -->
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="topbar">
+        <strong id="currentGroupTitle">Chọn một nhóm để bắt đầu</strong>
+      </div>
+      <div class="messages" id="messages"></div>
+      <div class="composer">
+        <input
+          id="messageInput"
+          type="text"
+          placeholder="Gõ tin nhắn và nhấn Gửi (Enter)"
+        />
+        <button id="sendBtn">Gửi</button>
+      </div>
+    </div>
+
+    <script type="module">
+      // Firebase SDK (modular) từ CDN
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        push,
+        set,
+        onValue,
+        get,
+      } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+      import {
+        getAuth,
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        signOut,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+
+      // ---- Thay bằng cấu hình Firebase của bạn ----
+      const firebaseConfig = {
+        apiKey: "AIzaSyBVbNvpjsSjSyGTn5Kvk5iaAi0S2KvF5Ks",
+        authDomain: "jsi04-c3a8c.firebaseapp.com",
+        databaseURL:
+          "https://jsi04-c3a8c-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "jsi04-c3a8c",
+        storageBucket: "jsi04-c3a8c.firebasestorage.app",
+        messagingSenderId: "241743024495",
+        appId: "1:241743024495:web:31c9c9cf6cc87fb757d89a",
+        measurementId: "G-67CWVS1Y02",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase(app);
+      const auth = getAuth(app);
+
+      // state
+      let currentMessagesUnsubscribe = null;
+      let currentUser = null;
+      const state = { currentGroupId: null, userRole: null };
+
+      // Groups
+      const groupsRef = ref(db, "groups");
+
+      function renderGroupsFromSnapshot(snapshot) {
+        const data = snapshot.val() || {};
+        const arr = Object.keys(data).map((k) => ({
+          id: k,
+          name: data[k].name,
+        }));
+        const el = document.getElementById("groupsList");
+        el.innerHTML = "";
+        arr.forEach((g) => {
+          const d = document.createElement("div");
+          d.className =
+            "group-item" + (g.id === state.currentGroupId ? " active" : "");
+          d.dataset.groupId = g.id;
+          d.textContent = g.name;
+          d.onclick = () => selectGroup(g.id, g.name);
+          el.appendChild(d);
+        });
+      }
+
+      function updateActiveGroupUI() {
+        document.querySelectorAll(".group-item").forEach((item) => {
+          item.classList.toggle(
+            "active",
+            item.dataset.groupId === state.currentGroupId,
+          );
+        });
+      }
+
+      function getCurrentUsername() {
+        if (!currentUser) return "Khách";
+        return currentUser.displayName || currentUser.email.split("@")[0];
+      }
+
+      function isAdmin() {
+        return state.userRole === "admin";
+      }
+
+      function updateAuthUI() {
+        const signedInSection = document.getElementById("signedInSection");
+        const signedOutSection = document.getElementById("signedOutSection");
+        const userRoleLabel = document.getElementById("userRoleLabel");
+        const signedInName = document.getElementById("signedInName");
+        const createGroupBtn = document.getElementById("createGroupBtn");
+
+        if (currentUser) {
+          signedOutSection.style.display = "none";
+          signedInSection.style.display = "block";
+          signedInName.textContent = getCurrentUsername();
+          userRoleLabel.textContent = state.userRole || "member";
+          createGroupBtn.disabled = !isAdmin();
+          createGroupBtn.textContent = isAdmin() ? "Tạo" : "Chỉ admin";
+        } else {
+          signedOutSection.style.display = "block";
+          signedInSection.style.display = "none";
+          createGroupBtn.disabled = true;
+          createGroupBtn.textContent = "Tạo";
+        }
+      }
+
+      function setUserRole(uid, role) {
+        return set(ref(db, `roles/${uid}`), role);
+      }
+
+      async function loadUserRole(user) {
+        if (!user) {
+          state.userRole = null;
+          updateAuthUI();
+          return;
+        }
+
+        const roleRef = ref(db, `roles/${user.uid}`);
+        const roleSnap = await get(roleRef);
+        if (roleSnap.exists()) {
+          state.userRole = roleSnap.val();
+          updateAuthUI();
+          return;
+        }
+
+        const allRolesRef = ref(db, "roles");
+        const allRolesSnap = await get(allRolesRef);
+        if (!allRolesSnap.exists()) {
+          state.userRole = "admin";
+        } else {
+          state.userRole = "member";
+        }
+        await setUserRole(user.uid, state.userRole);
+        updateAuthUI();
+      }
+
+      function handleAuthState(user) {
+        currentUser = user;
+        if (user) {
+          loadUserRole(user);
+        } else {
+          state.userRole = null;
+          updateAuthUI();
+        }
+      }
+
+      onAuthStateChanged(auth, handleAuthState);
+
+      onValue(groupsRef, (snap) => {
+        renderGroupsFromSnapshot(snap);
+      });
+
+      function createGroup(name) {
+        if (!currentUser || !isAdmin()) {
+          alert("Chỉ admin mới được tạo nhóm.");
+          return;
+        }
+        if (!name) return;
+        const newRef = push(groupsRef);
+        set(newRef, { name });
+        // select will happen via onValue update
+      }
+
+      // Messages
+      function selectGroup(groupId, groupName) {
+        state.currentGroupId = groupId;
+        document.getElementById("currentGroupTitle").textContent = groupName
+          ? `Nhóm: ${groupName}`
+          : "Chọn một nhóm để bắt đầu";
+        // detach previous listener
+        if (currentMessagesUnsubscribe) {
+          currentMessagesUnsubscribe();
+          currentMessagesUnsubscribe = null;
+        }
+
+        const msgsRef = ref(db, `messages/${groupId}`);
+        // listen full snapshot and render
+        currentMessagesUnsubscribe = onValue(msgsRef, (snap) => {
+          const data = snap.val() || {};
+          const arr = Object.keys(data).map((k) => data[k]);
+          renderMessages(arr);
+        });
+        updateActiveGroupUI();
+      }
+
+      function renderMessages(arr) {
+        const el = document.getElementById("messages");
+        el.innerHTML = "";
+        arr.sort((a, b) => a.ts - b.ts);
+        arr.forEach((m) => {
+          const d = document.createElement("div");
+          d.className = "message";
+          const meta = document.createElement("div");
+          meta.className = "meta";
+          meta.textContent = `${m.user} · ${new Date(m.ts).toLocaleString()}`;
+          const body = document.createElement("div");
+          body.textContent = m.text;
+          d.appendChild(meta);
+          d.appendChild(body);
+          el.appendChild(d);
+        });
+        el.scrollTop = el.scrollHeight;
+      }
+
+      function sendMessage(text) {
+        if (!currentUser) {
+          alert("Vui lòng đăng nhập trước khi gửi tin nhắn.");
+          return;
+        }
+        if (!state.currentGroupId) {
+          alert("Vui lòng chọn nhóm trước.");
+          return;
+        }
+        const username = getCurrentUsername();
+        const msgsRef = ref(db, `messages/${state.currentGroupId}`);
+        const newRef = push(msgsRef);
+        set(newRef, { id: newRef.key, user: username, text, ts: Date.now() });
+      }
+
+      // UI hooks
+      document
+        .getElementById("signInBtn")
+        .addEventListener("click", async () => {
+          const email = document.getElementById("authEmail").value.trim();
+          const password = document.getElementById("authPassword").value.trim();
+          if (!email || !password) return alert("Nhập email và mật khẩu.");
+          try {
+            await signInWithEmailAndPassword(auth, email, password);
+          } catch (err) {
+            alert(`Đăng nhập thất bại: ${err.message}`);
+          }
+        });
+
+      document
+        .getElementById("registerBtn")
+        .addEventListener("click", async () => {
+          const email = document.getElementById("authEmail").value.trim();
+          const password = document.getElementById("authPassword").value.trim();
+          if (!email || !password) return alert("Nhập email và mật khẩu.");
+          try {
+            await createUserWithEmailAndPassword(auth, email, password);
+          } catch (err) {
+            alert(`Đăng ký thất bại: ${err.message}`);
+          }
+        });
+
+      document.getElementById("signOutBtn").addEventListener("click", () => {
+        signOut(auth);
+      });
+
+      document
+        .getElementById("createGroupBtn")
+        .addEventListener("click", () => {
+          const name = document.getElementById("newGroupName").value.trim();
+          if (!name) return alert("Nhập tên nhóm.");
+          createGroup(name);
+          document.getElementById("newGroupName").value = "";
+        });
+
+      document.getElementById("sendBtn").addEventListener("click", () => {
+        const t = document.getElementById("messageInput");
+        const val = t.value.trim();
+        if (!val) return;
+        sendMessage(val);
+        t.value = "";
+        t.focus();
+      });
+
+      document
+        .getElementById("messageInput")
+        .addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            document.getElementById("sendBtn").click();
+          }
+        });
+
+      // Init: ensure there's at least one group (only if DB empty)
+      onValue(
+        groupsRef,
+        (snap) => {
+          if (!snap.exists()) {
+            const a = push(groupsRef);
+            set(a, { name: "Nhóm chung" });
+          }
+        },
+        { onlyOnce: true },
+      );
+
+      // KẾT LUẬN: Replace the firebaseConfig placeholders with your project values.
+      // Make sure Realtime Database rules allow read/write for your test, e.g.:
+      // {
+      //   "rules": {
+      //     ".read": true,
+      //     ".write": true
+      //   }
+      // }
+    </script>
+  </body>
+</html>
