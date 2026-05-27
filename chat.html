@@ -1,456 +1,494 @@
 <!doctype html>
 <html lang="vi">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Chat nhóm (Firebase Realtime)</title>
-    <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChatApp — Chat Nhóm</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
     <style>
-      body {
-        font-family: Arial, Helvetica, sans-serif;
-        margin: 0;
-        height: 100vh;
-        display: flex;
-      }
+      html, body { height: 100%; overflow: hidden; }
+
+      /* ── Sidebar ─────────────────────────────── */
       .sidebar {
-        width: 260px;
-        border-right: 1px solid #ddd;
-        padding: 12px;
-        box-sizing: border-box;
+        width: 270px;
+        min-width: 270px;
+        height: 100vh;
+        background: #1a1a2e;
+        color: #d0d0e8;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
       }
-      .main {
+
+      .sidebar-brand {
+        padding: 16px;
+        font-weight: 700;
+        font-size: 15px;
+        color: #fff;
+        border-bottom: 1px solid rgba(255,255,255,.08);
+        flex-shrink: 0;
+      }
+
+      .sidebar-section {
+        padding: 12px 14px;
+        border-bottom: 1px solid rgba(255,255,255,.07);
+        flex-shrink: 0;
+      }
+
+      .sidebar-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: rgba(255,255,255,.35);
+        margin-bottom: 6px;
+      }
+
+      /* inputs trong sidebar */
+      .sidebar .form-control {
+        background: rgba(255,255,255,.08);
+        border: 1px solid rgba(255,255,255,.12);
+        color: #fff;
+        border-radius: 10px;
+        font-size: 13px;
+      }
+      .sidebar .form-control::placeholder { color: rgba(255,255,255,.35); }
+      .sidebar .form-control:focus {
+        background: rgba(255,255,255,.14);
+        border-color: #6367ff;
+        box-shadow: none;
+        color: #fff;
+      }
+
+      /* Groups list */
+      #groupsList { flex: 1; overflow-y: auto; padding: 6px 8px; }
+
+      .group-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.15s;
+        margin-bottom: 2px;
+        color: rgba(255,255,255,.75);
+      }
+      .group-item:hover  { background: rgba(255,255,255,.08); color: #fff; }
+      .group-item.active { background: #6367ff; color: #fff; }
+      .group-item .g-icon {
+        width: 30px; height: 30px;
+        border-radius: 8px;
+        background: rgba(255,255,255,.1);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14px; flex-shrink: 0;
+      }
+      .group-item.active .g-icon { background: rgba(255,255,255,.2); }
+
+      .sidebar-footer {
+        padding: 12px 14px;
+        border-top: 1px solid rgba(255,255,255,.08);
+        flex-shrink: 0;
+      }
+
+      /* nickname badge */
+      .nick-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(99,103,255,.3);
+        border: 1px solid rgba(99,103,255,.5);
+        border-radius: 20px;
+        padding: 4px 10px;
+        font-size: 13px;
+        color: #c9c9ff;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .nick-badge:hover { background: rgba(99,103,255,.5); }
+
+      /* ── Main ─────────────────────────────────── */
+      .chat-main {
         flex: 1;
         display: flex;
         flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
       }
-      .groups {
-        margin-bottom: 12px;
-      }
-      .group-item {
-        padding: 8px;
-        border-radius: 6px;
-        cursor: pointer;
-      }
-      .group-item.active {
-        background: #0078d4;
-        color: #fff;
-      }
-      .messages {
-        flex: 1;
-        padding: 12px;
-        overflow: auto;
-        background: #f7f7f7;
-      }
-      .message {
-        margin-bottom: 8px;
-        padding: 8px;
-        border-radius: 6px;
-        background: #fff;
-        box-shadow: 0 0 0 1px #eee inset;
-      }
-      .message .meta {
-        font-size: 12px;
-        color: #666;
-        margin-bottom: 6px;
-      }
-      .composer {
-        display: flex;
-        padding: 12px;
-        border-top: 1px solid #ddd;
-      }
-      .composer input[type="text"] {
-        flex: 1;
-        padding: 8px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        margin-right: 8px;
-      }
-      .composer button {
-        padding: 8px 12px;
-      }
+
       .topbar {
-        padding: 12px;
-        border-bottom: 1px solid #eee;
+        height: 56px;
+        padding: 0 20px;
         background: #fff;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+        box-shadow: 0 1px 4px rgba(0,0,0,.06);
       }
+
+      /* Messages */
+      #messages {
+        flex: 1;
+        overflow-y: auto;
+        background: #f4f5f8;
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .msg-wrap { display: flex; flex-direction: column; }
+      .msg-wrap.own { align-items: flex-end; }
+
+      .msg-bubble {
+        max-width: 62%;
+        padding: 9px 14px;
+        border-radius: 14px;
+        font-size: 14px;
+        line-height: 1.5;
+        word-break: break-word;
+      }
+      .msg-wrap.own   .msg-bubble {
+        background: #e8e9ff;
+        border-bottom-right-radius: 3px;
+      }
+      .msg-wrap.other .msg-bubble {
+        background: #fff;
+        border-bottom-left-radius: 3px;
+        box-shadow: 0 1px 3px rgba(0,0,0,.08);
+      }
+
+      .msg-meta {
+        font-size: 11px;
+        color: #aaa;
+        margin-top: 3px;
+        padding: 0 4px;
+      }
+
+      /* Composer */
+      .composer {
+        padding: 12px 16px;
+        background: #fff;
+        border-top: 1px solid #eee;
+        display: flex;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+      .composer .form-control {
+        border-radius: 22px;
+        border: 1.5px solid #e0e0e0;
+        padding: 10px 16px;
+        font-size: 14px;
+      }
+      .composer .form-control:focus { border-color: #6367ff; box-shadow: none; }
+      .btn-send {
+        width: 42px; height: 42px;
+        border-radius: 50%;
+        background: #6367ff;
+        border: none; color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        transition: background 0.2s;
+      }
+      .btn-send:hover { background: #4f53e0; }
     </style>
   </head>
-  <body>
-    <div class="sidebar">
-      <div id="authSection">
-        <div id="signedOutSection">
-          <div style="margin-bottom: 8px">
-            <label>Email:</label>
-            <input
-              id="authEmail"
-              type="email"
-              placeholder="Nhập email"
-              style="
-                width: 100%;
-                padding: 6px;
-                margin-top: 6px;
-                box-sizing: border-box;
-              "
-            />
-          </div>
-          <div style="margin-bottom: 8px">
-            <label>Mật khẩu:</label>
-            <input
-              id="authPassword"
-              type="password"
-              placeholder="Nhập mật khẩu"
-              style="
-                width: 100%;
-                padding: 6px;
-                margin-top: 6px;
-                box-sizing: border-box;
-              "
-            />
-          </div>
-          <div style="display: flex; gap: 8px">
-            <button id="signInBtn">Đăng nhập</button>
-            <button id="registerBtn">Đăng ký</button>
+
+  <body class="d-flex">
+
+    <!-- ══════════ SIDEBAR ══════════ -->
+    <aside class="sidebar">
+
+      <!-- Brand -->
+      <div class="sidebar-brand">
+        <i class="bi bi-people-fill me-2" style="color:#6367ff;"></i>Chat Nhóm
+      </div>
+
+      <!-- Tài khoản -->
+      <div class="sidebar-section">
+        <div class="sidebar-label">Tài khoản</div>
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+               id="accountAvatar"
+               style="width:32px;height:32px;font-size:13px;overflow:hidden;">?</div>
+          <div style="overflow:hidden; flex:1;">
+            <div class="text-white fw-semibold text-truncate small" id="accountName">...</div>
+            <div class="text-truncate" style="font-size:11px;color:rgba(255,255,255,.4);" id="accountEmail">...</div>
           </div>
         </div>
+        <button class="btn btn-outline-danger btn-sm w-100 rounded-pill" id="logoutBtn">
+          <i class="bi bi-box-arrow-right me-1"></i>Đăng xuất
+        </button>
+      </div>
 
-        <div id="signedInSection" style="display: none; margin-top: 12px">
-          <div>Đăng nhập với:</div>
-          <strong id="signedInName">...</strong>
-          <div style="margin-top: 6px">
-            Vai trò: <span id="userRoleLabel">...</span>
-          </div>
-          <button id="signOutBtn" style="margin-top: 10px; width: 100%">
-            Đăng xuất
+      <!-- Nickname -->
+      <div class="sidebar-section">
+        <div class="sidebar-label">Nickname trong chat</div>
+        <div class="d-flex gap-2 align-items-center">
+          <input type="text" class="form-control form-control-sm"
+                 id="nicknameInput" placeholder="Nhập nickname..." maxlength="30" />
+          <button class="btn btn-sm btn-primary rounded-pill px-3" id="applyNickBtn"
+                  title="Áp dụng">
+            <i class="bi bi-check-lg"></i>
+          </button>
+        </div>
+        <div class="mt-2 d-flex align-items-center gap-1" style="font-size:12px;color:rgba(255,255,255,.45);">
+          Đang dùng:
+          <span id="currentNickDisplay" class="nick-badge"></span>
+        </div>
+      </div>
+
+      <!-- Tạo nhóm -->
+      <div class="sidebar-section">
+        <div class="sidebar-label">Tạo nhóm mới</div>
+        <div class="d-flex gap-2">
+          <input type="text" class="form-control form-control-sm"
+                 id="newGroupName" placeholder="Tên nhóm..." />
+          <button class="btn btn-success btn-sm rounded-3 px-3" id="createGroupBtn">
+            <i class="bi bi-plus-lg"></i>
           </button>
         </div>
       </div>
 
-      <div style="margin-top: 20px">
-        <div style="display: flex; gap: 8px">
-          <input
-            id="newGroupName"
-            type="text"
-            placeholder="Tạo nhóm mới"
-            style="flex: 1; padding: 6px"
-          />
-          <button id="createGroupBtn">Tạo</button>
+      <!-- Danh sách nhóm -->
+      <div class="sidebar-label px-3 pt-3 pb-1">Nhóm chat</div>
+      <div id="groupsList"></div>
+
+      <!-- Footer -->
+      <div class="sidebar-footer">
+        <a href="profile.html" class="btn btn-outline-light btn-sm w-100 rounded-pill">
+          <i class="bi bi-person-circle me-2"></i>Hồ sơ cá nhân
+        </a>
+      </div>
+    </aside>
+
+    <!-- ══════════ MAIN ══════════ -->
+    <div class="chat-main">
+
+      <!-- Topbar -->
+      <div class="topbar">
+        <i class="bi bi-hash text-primary fs-5"></i>
+        <strong id="currentGroupTitle" class="text-muted" style="font-size:15px;">
+          Chọn một nhóm để bắt đầu
+        </strong>
+      </div>
+
+      <!-- Messages -->
+      <div id="messages">
+        <div id="emptyGroupMsg"
+             class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+          <i class="bi bi-chat-square-dots fs-1 mb-3" style="color:#c9beff;"></i>
+          <p class="small mb-0">Chọn một nhóm ở bên trái để xem tin nhắn</p>
         </div>
       </div>
-      <hr />
-      <div class="groups" id="groupsList">
-        <!-- danh sách nhóm sẽ ở đây -->
-      </div>
-    </div>
 
-    <div class="main">
-      <div class="topbar">
-        <strong id="currentGroupTitle">Chọn một nhóm để bắt đầu</strong>
-      </div>
-      <div class="messages" id="messages"></div>
+      <!-- Composer -->
       <div class="composer">
-        <input
-          id="messageInput"
-          type="text"
-          placeholder="Gõ tin nhắn và nhấn Gửi (Enter)"
-        />
-        <button id="sendBtn">Gửi</button>
+        <input type="text" class="form-control" id="messageInput"
+               placeholder="Nhập tin nhắn... (Enter để gửi)" />
+        <button class="btn-send" id="sendBtn">
+          <i class="bi bi-send-fill"></i>
+        </button>
       </div>
     </div>
 
+    <!-- Loading overlay -->
+    <div id="loadingOverlay"
+         class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+         style="background:rgba(26,26,46,.7); z-index:9000;">
+      <div class="spinner-border text-light" style="width:2.5rem;height:2.5rem;"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module">
-      // Firebase SDK (modular) từ CDN
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+      import { auth, rtdb } from "./firebase-config.js";
+      import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
       import {
-        getDatabase,
-        ref,
-        push,
-        set,
-        onValue,
-        get,
-      } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
-      import {
-        getAuth,
-        createUserWithEmailAndPassword,
-        signInWithEmailAndPassword,
-        signOut,
-        onAuthStateChanged,
-      } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+        ref, push, set, onValue, get,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-      // ---- Thay bằng cấu hình Firebase của bạn ----
-      const firebaseConfig = {
-        apiKey: "AIzaSyBVbNvpjsSjSyGTn5Kvk5iaAi0S2KvF5Ks",
-        authDomain: "jsi04-c3a8c.firebaseapp.com",
-        databaseURL:
-          "https://jsi04-c3a8c-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "jsi04-c3a8c",
-        storageBucket: "jsi04-c3a8c.firebasestorage.app",
-        messagingSenderId: "241743024495",
-        appId: "1:241743024495:web:31c9c9cf6cc87fb757d89a",
-        measurementId: "G-67CWVS1Y02",
-      };
+      // ─── State ───────────────────────────────────────────────────────────
+      let currentUser    = null;
+      let nickname       = "";
+      let currentGroupId = null;
+      let unsubMessages  = null;
 
-      const app = initializeApp(firebaseConfig);
-      const db = getDatabase(app);
-      const auth = getAuth(app);
+      const groupsRef = ref(rtdb, "groups");
 
-      // state
-      let currentMessagesUnsubscribe = null;
-      let currentUser = null;
-      const state = { currentGroupId: null, userRole: null };
+      // ─── AUTH CHECK ──────────────────────────────────────────────────────
+      onAuthStateChanged(auth, (user) => {
+        if (!user) { window.location.href = "index.html"; return; }
 
-      // Groups
-      const groupsRef = ref(db, "groups");
-
-      function renderGroupsFromSnapshot(snapshot) {
-        const data = snapshot.val() || {};
-        const arr = Object.keys(data).map((k) => ({
-          id: k,
-          name: data[k].name,
-        }));
-        const el = document.getElementById("groupsList");
-        el.innerHTML = "";
-        arr.forEach((g) => {
-          const d = document.createElement("div");
-          d.className =
-            "group-item" + (g.id === state.currentGroupId ? " active" : "");
-          d.dataset.groupId = g.id;
-          d.textContent = g.name;
-          d.onclick = () => selectGroup(g.id, g.name);
-          el.appendChild(d);
-        });
-      }
-
-      function updateActiveGroupUI() {
-        document.querySelectorAll(".group-item").forEach((item) => {
-          item.classList.toggle(
-            "active",
-            item.dataset.groupId === state.currentGroupId,
-          );
-        });
-      }
-
-      function getCurrentUsername() {
-        if (!currentUser) return "Khách";
-        return currentUser.displayName || currentUser.email.split("@")[0];
-      }
-
-      function isAdmin() {
-        return state.userRole === "admin";
-      }
-
-      function updateAuthUI() {
-        const signedInSection = document.getElementById("signedInSection");
-        const signedOutSection = document.getElementById("signedOutSection");
-        const userRoleLabel = document.getElementById("userRoleLabel");
-        const signedInName = document.getElementById("signedInName");
-        const createGroupBtn = document.getElementById("createGroupBtn");
-
-        if (currentUser) {
-          signedOutSection.style.display = "none";
-          signedInSection.style.display = "block";
-          signedInName.textContent = getCurrentUsername();
-          userRoleLabel.textContent = state.userRole || "member";
-          createGroupBtn.disabled = !isAdmin();
-          createGroupBtn.textContent = isAdmin() ? "Tạo" : "Chỉ admin";
-        } else {
-          signedOutSection.style.display = "block";
-          signedInSection.style.display = "none";
-          createGroupBtn.disabled = true;
-          createGroupBtn.textContent = "Tạo";
-        }
-      }
-
-      function setUserRole(uid, role) {
-        return set(ref(db, `roles/${uid}`), role);
-      }
-
-      async function loadUserRole(user) {
-        if (!user) {
-          state.userRole = null;
-          updateAuthUI();
-          return;
-        }
-
-        const roleRef = ref(db, `roles/${user.uid}`);
-        const roleSnap = await get(roleRef);
-        if (roleSnap.exists()) {
-          state.userRole = roleSnap.val();
-          updateAuthUI();
-          return;
-        }
-
-        const allRolesRef = ref(db, "roles");
-        const allRolesSnap = await get(allRolesRef);
-        if (!allRolesSnap.exists()) {
-          state.userRole = "admin";
-        } else {
-          state.userRole = "member";
-        }
-        await setUserRole(user.uid, state.userRole);
-        updateAuthUI();
-      }
-
-      function handleAuthState(user) {
         currentUser = user;
-        if (user) {
-          loadUserRole(user);
+
+        // Hiện thông tin tài khoản
+        const name     = user.displayName || user.email.split("@")[0];
+        const photoURL = user.photoURL || "";
+
+        document.getElementById("accountName").textContent  = name;
+        document.getElementById("accountEmail").textContent = user.email;
+
+        const av = document.getElementById("accountAvatar");
+        if (photoURL) {
+          av.innerHTML = `<img src="${photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
         } else {
-          state.userRole = null;
-          updateAuthUI();
+          av.textContent = name[0].toUpperCase();
         }
-      }
 
-      onAuthStateChanged(auth, handleAuthState);
+        // Load nickname từ localStorage (mỗi tài khoản lưu riêng)
+        const savedNick = localStorage.getItem(`nick_${user.uid}`);
+        nickname = savedNick || name;
+        document.getElementById("nicknameInput").value   = nickname;
+        document.getElementById("currentNickDisplay").textContent = nickname;
 
-      onValue(groupsRef, (snap) => {
-        renderGroupsFromSnapshot(snap);
+        // Ẩn loading
+        document.getElementById("loadingOverlay").classList.replace("d-flex", "d-none");
       });
 
-      function createGroup(name) {
-        if (!currentUser || !isAdmin()) {
-          alert("Chỉ admin mới được tạo nhóm.");
-          return;
-        }
-        if (!name) return;
-        const newRef = push(groupsRef);
-        set(newRef, { name });
-        // select will happen via onValue update
+      // ─── LOGOUT ──────────────────────────────────────────────────────────
+      document.getElementById("logoutBtn").addEventListener("click", async () => {
+        await signOut(auth);
+        window.location.href = "index.html";
+      });
+
+      // ─── NICKNAME ────────────────────────────────────────────────────────
+      document.getElementById("applyNickBtn").addEventListener("click", applyNickname);
+      document.getElementById("nicknameInput").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") applyNickname();
+      });
+
+      function applyNickname() {
+        const val = document.getElementById("nicknameInput").value.trim();
+        if (!val) return;
+        nickname = val;
+        localStorage.setItem(`nick_${currentUser.uid}`, nickname);
+        document.getElementById("currentNickDisplay").textContent = nickname;
       }
 
-      // Messages
-      function selectGroup(groupId, groupName) {
-        state.currentGroupId = groupId;
-        document.getElementById("currentGroupTitle").textContent = groupName
-          ? `Nhóm: ${groupName}`
-          : "Chọn một nhóm để bắt đầu";
-        // detach previous listener
-        if (currentMessagesUnsubscribe) {
-          currentMessagesUnsubscribe();
-          currentMessagesUnsubscribe = null;
-        }
+      // ─── GROUPS ──────────────────────────────────────────────────────────
+      onValue(groupsRef, (snap) => {
+        renderGroups(snap.val() || {});
+      });
 
-        const msgsRef = ref(db, `messages/${groupId}`);
-        // listen full snapshot and render
-        currentMessagesUnsubscribe = onValue(msgsRef, (snap) => {
+      // Tạo "Nhóm chung" mặc định nếu DB trống
+      onValue(groupsRef, (snap) => {
+        if (!snap.exists()) {
+          const r = push(groupsRef);
+          set(r, { name: "Nhóm chung" });
+        }
+      }, { onlyOnce: true });
+
+      document.getElementById("createGroupBtn").addEventListener("click", () => {
+        const name = document.getElementById("newGroupName").value.trim();
+        if (!name)        return;
+        if (!currentUser) return alert("Vui lòng chờ đăng nhập!");
+        const r = push(groupsRef);
+        set(r, { name, createdBy: nickname || "Ẩn danh", createdAt: Date.now() });
+        document.getElementById("newGroupName").value = "";
+      });
+
+      document.getElementById("newGroupName").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") document.getElementById("createGroupBtn").click();
+      });
+
+      function renderGroups(data) {
+        const el = document.getElementById("groupsList");
+        el.innerHTML = "";
+        Object.entries(data).forEach(([id, g]) => {
+          const item = document.createElement("div");
+          item.className       = "group-item" + (id === currentGroupId ? " active" : "");
+          item.dataset.groupId = id;
+          item.innerHTML       = `
+            <div class="g-icon"><i class="bi bi-hash"></i></div>
+            <span class="text-truncate">${g.name}</span>`;
+          item.addEventListener("click", () => selectGroup(id, g.name));
+          el.appendChild(item);
+        });
+      }
+
+      // ─── SELECT GROUP ────────────────────────────────────────────────────
+      function selectGroup(groupId, groupName) {
+        currentGroupId = groupId;
+        document.getElementById("currentGroupTitle").textContent = groupName;
+        document.getElementById("emptyGroupMsg").style.display   = "none";
+
+        document.querySelectorAll(".group-item").forEach(el => {
+          el.classList.toggle("active", el.dataset.groupId === groupId);
+        });
+
+        // Hủy listener cũ
+        if (unsubMessages) { unsubMessages(); unsubMessages = null; }
+
+        // Lắng nghe tin nhắn realtime
+        const msgsRef = ref(rtdb, `messages/${groupId}`);
+        unsubMessages = onValue(msgsRef, (snap) => {
           const data = snap.val() || {};
-          const arr = Object.keys(data).map((k) => data[k]);
+          const arr  = Object.values(data).sort((a, b) => a.ts - b.ts);
           renderMessages(arr);
         });
-        updateActiveGroupUI();
       }
 
+      // ─── RENDER MESSAGES ─────────────────────────────────────────────────
       function renderMessages(arr) {
         const el = document.getElementById("messages");
         el.innerHTML = "";
-        arr.sort((a, b) => a.ts - b.ts);
+
         arr.forEach((m) => {
-          const d = document.createElement("div");
-          d.className = "message";
+          // "own" nếu cùng nickname HOẶC cùng uid (tin nhắn cũ)
+          const isOwn = m.nickname === nickname ||
+                        (m.uid && currentUser && m.uid === currentUser.uid);
+
+          const time = new Date(m.ts).toLocaleTimeString("vi-VN",
+            { hour: "2-digit", minute: "2-digit" });
+
+          const wrap = document.createElement("div");
+          wrap.className = `msg-wrap ${isOwn ? "own" : "other"}`;
+
+          const bubble = document.createElement("div");
+          bubble.className  = "msg-bubble";
+          bubble.textContent = m.text;
+
           const meta = document.createElement("div");
-          meta.className = "meta";
-          meta.textContent = `${m.user} · ${new Date(m.ts).toLocaleString()}`;
-          const body = document.createElement("div");
-          body.textContent = m.text;
-          d.appendChild(meta);
-          d.appendChild(body);
-          el.appendChild(d);
+          meta.className  = "msg-meta";
+          meta.textContent = isOwn
+            ? `${m.nickname || "Bạn"} · ${time}`
+            : `${m.nickname || m.user || "Ẩn danh"} · ${time}`;
+
+          wrap.appendChild(bubble);
+          wrap.appendChild(meta);
+          el.appendChild(wrap);
         });
+
         el.scrollTop = el.scrollHeight;
       }
 
-      function sendMessage(text) {
-        if (!currentUser) {
-          alert("Vui lòng đăng nhập trước khi gửi tin nhắn.");
-          return;
-        }
-        if (!state.currentGroupId) {
-          alert("Vui lòng chọn nhóm trước.");
-          return;
-        }
-        const username = getCurrentUsername();
-        const msgsRef = ref(db, `messages/${state.currentGroupId}`);
-        const newRef = push(msgsRef);
-        set(newRef, { id: newRef.key, user: username, text, ts: Date.now() });
+      // ─── SEND MESSAGE ────────────────────────────────────────────────────
+      function sendMessage() {
+        const text = document.getElementById("messageInput").value.trim();
+        if (!text)         return;
+        if (!currentUser)  return;
+        if (!currentGroupId) return alert("Vui lòng chọn nhóm!");
+        if (!nickname)     return alert("Vui lòng đặt nickname!");
+
+        const r = push(ref(rtdb, `messages/${currentGroupId}`));
+        set(r, {
+          id:       r.key,
+          uid:      currentUser.uid,   // lưu uid để nhận diện "own"
+          nickname: nickname,          // nickname tuỳ chọn
+          text,
+          ts: Date.now(),
+        });
+
+        document.getElementById("messageInput").value = "";
       }
 
-      // UI hooks
-      document
-        .getElementById("signInBtn")
-        .addEventListener("click", async () => {
-          const email = document.getElementById("authEmail").value.trim();
-          const password = document.getElementById("authPassword").value.trim();
-          if (!email || !password) return alert("Nhập email và mật khẩu.");
-          try {
-            await signInWithEmailAndPassword(auth, email, password);
-          } catch (err) {
-            alert(`Đăng nhập thất bại: ${err.message}`);
-          }
-        });
-
-      document
-        .getElementById("registerBtn")
-        .addEventListener("click", async () => {
-          const email = document.getElementById("authEmail").value.trim();
-          const password = document.getElementById("authPassword").value.trim();
-          if (!email || !password) return alert("Nhập email và mật khẩu.");
-          try {
-            await createUserWithEmailAndPassword(auth, email, password);
-          } catch (err) {
-            alert(`Đăng ký thất bại: ${err.message}`);
-          }
-        });
-
-      document.getElementById("signOutBtn").addEventListener("click", () => {
-        signOut(auth);
+      document.getElementById("sendBtn").addEventListener("click", sendMessage);
+      document.getElementById("messageInput").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); sendMessage(); }
       });
-
-      document
-        .getElementById("createGroupBtn")
-        .addEventListener("click", () => {
-          const name = document.getElementById("newGroupName").value.trim();
-          if (!name) return alert("Nhập tên nhóm.");
-          createGroup(name);
-          document.getElementById("newGroupName").value = "";
-        });
-
-      document.getElementById("sendBtn").addEventListener("click", () => {
-        const t = document.getElementById("messageInput");
-        const val = t.value.trim();
-        if (!val) return;
-        sendMessage(val);
-        t.value = "";
-        t.focus();
-      });
-
-      document
-        .getElementById("messageInput")
-        .addEventListener("keydown", (e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            document.getElementById("sendBtn").click();
-          }
-        });
-
-      // Init: ensure there's at least one group (only if DB empty)
-      onValue(
-        groupsRef,
-        (snap) => {
-          if (!snap.exists()) {
-            const a = push(groupsRef);
-            set(a, { name: "Nhóm chung" });
-          }
-        },
-        { onlyOnce: true },
-      );
-
-      // KẾT LUẬN: Replace the firebaseConfig placeholders with your project values.
-      // Make sure Realtime Database rules allow read/write for your test, e.g.:
-      // {
-      //   "rules": {
-      //     ".read": true,
-      //     ".write": true
-      //   }
-      // }
     </script>
   </body>
 </html>

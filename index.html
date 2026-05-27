@@ -1,182 +1,313 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login / Register</title>
-
-    <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="style.css" />
+    <title>ChatApp — Đăng nhập</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+      body {
+        background: linear-gradient(135deg, #6367ff 0%, #8494ff 50%, #c9beff 100%);
+        min-height: 100vh;
+      }
+      .auth-card {
+        border: none;
+        border-radius: 24px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+      }
+      .nav-tabs {
+        border-bottom: 2px solid #eee;
+      }
+      .nav-tabs .nav-link {
+        color: #888;
+        border: none;
+        border-bottom: 3px solid transparent;
+        font-weight: 500;
+        padding: 10px 0;
+        margin-right: 20px;
+        transition: 0.2s;
+      }
+      .nav-tabs .nav-link.active {
+        color: #6367ff;
+        border-bottom: 3px solid #6367ff;
+        background: none;
+      }
+      .form-control {
+        border-radius: 12px;
+        border: 1.5px solid #e0e0e0;
+        padding: 11px 14px;
+        transition: 0.2s;
+      }
+      .form-control:focus {
+        border-color: #6367ff;
+        box-shadow: 0 0 0 3px rgba(99, 103, 255, 0.15);
+      }
+      .input-group-text {
+        border-radius: 12px 0 0 12px;
+        background: #f5f6ff;
+        border: 1.5px solid #e0e0e0;
+        border-right: none;
+        color: #6367ff;
+      }
+      .input-group .form-control {
+        border-radius: 0 12px 12px 0;
+        border-left: none;
+      }
+      .btn-primary {
+        background: #6367ff;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+      }
+      .btn-primary:hover { background: #4f53e0; }
+      .btn-success { border-radius: 12px; font-weight: 600; }
+      .btn-google {
+        border-radius: 12px;
+        border: 1.5px solid #dadce0;
+        color: #3c4043;
+        font-weight: 500;
+        transition: 0.2s;
+      }
+      .btn-google:hover { background: #f8f9fa; border-color: #bbb; }
+      .divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #bbb;
+        font-size: 13px;
+      }
+      .divider::before,
+      .divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: #eee;
+      }
+      #alertBox { border-radius: 12px; font-size: 14px; }
+    </style>
   </head>
 
-  <body>
-    <div class="container">
-      <div class="title">Welcome</div>
-
-      <div class="tabs">
-        <button id="loginTab" class="active">Login</button>
-        <button id="registerTab">Register</button>
+  <body class="d-flex justify-content-center align-items-center min-vh-100 p-3">
+    <div class="auth-card bg-white p-4 p-md-5" style="width: 100%; max-width: 420px;">
+      <!-- Logo -->
+      <div class="text-center mb-4">
+        <div class="mb-2">
+          <i class="bi bi-chat-dots-fill fs-1" style="color: #6367ff;"></i>
+        </div>
+        <h3 class="fw-bold mb-1">ChatApp</h3>
+        <p class="text-muted small mb-0">Kết nối mọi người, mọi lúc</p>
       </div>
 
-      <form id="loginForm" class="form active">
-        <input id="loginUsername" type="text" placeholder="Username" required />
-        <input
-          id="loginPassword"
-          type="password"
-          placeholder="Password"
-          required
-        />
-        <button type="button" onclick="login()" class="submit">Login</button>
-      </form>
+      <!-- Tabs -->
+      <ul class="nav nav-tabs mb-4" id="authTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#loginTab" type="button">
+            <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#registerTab" type="button">
+            <i class="bi bi-person-plus me-1"></i>Đăng ký
+          </button>
+        </li>
+      </ul>
 
-      <form id="registerForm" class="form">
-        <input
-          id="registerUsername"
-          type="text"
-          placeholder="Username"
-          required
-        />
-        <input id="registerEmail" type="email" placeholder="Email" required />
-        <input
-          id="registerPassword"
-          type="password"
-          placeholder="Password"
-          required
-        />
-        <button type="button" id="registerBtn" class="submit">
-          Create account
-        </button>
-      </form>
+      <!-- Tab Content -->
+      <div class="tab-content">
 
-      <div class="footer">OR</div>
-      <button type="button" id="Google" class="submit">
-        Login with Google
+        <!-- ===== LOGIN ===== -->
+        <div class="tab-pane fade show active" id="loginTab" role="tabpanel">
+          <div class="mb-3">
+            <label class="form-label text-muted small fw-semibold">Email</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-envelope-fill"></i></span>
+              <input type="email" class="form-control" id="loginEmail" placeholder="email@example.com" />
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label text-muted small fw-semibold">Mật khẩu</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+              <input type="password" class="form-control" id="loginPassword" placeholder="••••••••" />
+            </div>
+          </div>
+          <button class="btn btn-primary w-100 py-2" id="loginBtn">
+            <span id="loginSpinner" class="spinner-border spinner-border-sm me-2 d-none"></span>
+            <i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập
+          </button>
+        </div>
+
+        <!-- ===== REGISTER ===== -->
+        <div class="tab-pane fade" id="registerTab" role="tabpanel">
+          <div class="mb-3">
+            <label class="form-label text-muted small fw-semibold">Tên hiển thị</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+              <input type="text" class="form-control" id="regUsername" placeholder="Tên của bạn" />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-muted small fw-semibold">Email</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-envelope-fill"></i></span>
+              <input type="email" class="form-control" id="regEmail" placeholder="email@example.com" />
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label text-muted small fw-semibold">Mật khẩu <span class="text-muted fw-normal">(ít nhất 6 ký tự)</span></label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+              <input type="password" class="form-control" id="regPassword" placeholder="••••••••" />
+            </div>
+          </div>
+          <button class="btn btn-success w-100 py-2" id="registerBtn">
+            <span id="registerSpinner" class="spinner-border spinner-border-sm me-2 d-none"></span>
+            <i class="bi bi-person-check-fill me-2"></i>Tạo tài khoản
+          </button>
+        </div>
+
+      </div><!-- /tab-content -->
+
+      <!-- Divider -->
+      <div class="divider my-4">HOẶC</div>
+
+      <!-- Google -->
+      <button class="btn btn-google w-100 py-2 d-flex align-items-center justify-content-center gap-2" id="googleBtn">
+        <svg width="18" height="18" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.6 2.3 30.1 0 24 0 14.7 0 6.7 5.4 2.7 13.3l7.9 6.1C12.5 13.3 17.8 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.2 5.6c4.2-3.9 6.6-9.6 6.6-16.5z"/>
+          <path fill="#FBBC05" d="M10.6 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.1.8-4.6l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l8-6.1z"/>
+          <path fill="#34A853" d="M24 48c6.1 0 11.2-2 14.9-5.4l-7.2-5.6c-2 1.4-4.5 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.8l-8 6.1C6.7 42.6 14.7 48 24 48z"/>
+        </svg>
+        Đăng nhập bằng Google
       </button>
+
+      <!-- Alert -->
+      <div id="alertBox" class="d-none mt-3"></div>
     </div>
 
-    <!-- ✅ Firebase compat (ONLY 1 SYSTEM) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+      import { auth, db } from "./firebase-config.js";
+      import {
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        GoogleAuthProvider,
+        signInWithPopup,
+        updateProfile,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import {
+        doc, setDoc, getDoc, serverTimestamp,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <script>
-      // Tabs
-      const loginTab = document.getElementById("loginTab");
-      const registerTab = document.getElementById("registerTab");
-      const loginForm = document.getElementById("loginForm");
-      const registerForm = document.getElementById("registerForm");
-
-      loginTab.onclick = () => {
-        loginTab.classList.add("active");
-        registerTab.classList.remove("active");
-        loginForm.classList.add("active");
-        registerForm.classList.remove("active");
-      };
-
-      registerTab.onclick = () => {
-        registerTab.classList.add("active");
-        loginTab.classList.remove("active");
-        registerForm.classList.add("active");
-        loginForm.classList.remove("active");
-      };
-
-      // Firebase config
-      const firebaseConfig = {
-        apiKey: "AIzaSyBVbNvpjsSjSyGTn5Kvk5iaAi0S2KvF5Ks",
-        authDomain: "jsi04-c3a8c.firebaseapp.com",
-        projectId: "jsi04-c3a8c",
-        storageBucket: "jsi04-c3a8c.firebasestorage.app",
-        messagingSenderId: "241743024495",
-        appId: "1:241743024495:web:31c9c9cf6cc87fb757d89a",
-      };
-
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.firestore();
-      const auth = firebase.auth();
-
-      // REGISTER (Firestore basic - giữ nguyên logic cũ)
-      document.getElementById("registerBtn").addEventListener("click", () => {
-        const username = document
-          .getElementById("registerUsername")
-          .value.trim();
-        const password = document
-          .getElementById("registerPassword")
-          .value.trim();
-        const email = document.getElementById("registerEmail").value.trim();
-
-        if (!username || !password || !email) {
-          alert("Nhập đầy đủ đi");
-          return;
-        }
-
-        db.collection("users")
-          .doc(username)
-          .set({ username, password, email })
-          .then(() => {
-            alert("Đăng ký thành công");
-          })
-          .catch((err) => alert(err.message));
+      // Nếu đã đăng nhập → vào thẳng app
+      onAuthStateChanged(auth, (user) => {
+        if (user) window.location.href = "chat.html";
       });
 
-      // LOGIN (Firestore basic)
-      function login() {
-        const username = document.getElementById("loginUsername").value.trim();
-        const password = document.getElementById("loginPassword").value.trim();
-
-        db.collection("users")
-          .doc(username)
-          .get()
-          .then((doc) => {
-            if (!doc.exists) {
-              alert("Không tồn tại tài khoản");
-              return;
-            }
-
-            if (doc.data().password === password) {
-              alert("Đăng nhập thành công");
-              window.location.href = "home.html";
-            } else {
-              alert("Sai mật khẩu");
-            }
-          })
-          .catch(() => alert("Lỗi hệ thống"));
+      // ─── Helper: Lưu user vào Firestore (chỉ lần đầu) ─────────────────────
+      async function ensureUserDoc(user, extra = {}) {
+        const ref = doc(db, "users", user.uid);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) {
+          await setDoc(ref, {
+            uid:       user.uid,
+            email:     user.email,
+            username:  extra.username || user.displayName || user.email.split("@")[0],
+            photoURL:  user.photoURL || "",
+            phone:     "",
+            bio:       "",
+            createdAt: serverTimestamp(),
+          });
+        }
       }
 
-      // ✅ GOOGLE LOGIN (FIXED)
-      const provider = new firebase.auth.GoogleAuthProvider();
+      // ─── Helpers UI ────────────────────────────────────────────────────────
+      function setLoading(btnId, spinnerId, loading) {
+        document.getElementById(btnId).disabled = loading;
+        document.getElementById(spinnerId).classList.toggle("d-none", !loading);
+      }
 
-      document.getElementById("Google").addEventListener("click", () => {
-        auth
-          .signInWithPopup(provider)
-          .then((result) => {
-            const user = result.user;
+      function showAlert(msg, type = "danger") {
+        const el = document.getElementById("alertBox");
+        el.className = `alert alert-${type} mt-3 fade show`;
+        el.innerHTML = `<i class="bi bi-exclamation-circle me-2"></i>${msg}`;
+      }
 
-            return db
-              .collection("users")
-              .doc(user.uid)
-              .get()
-              .then((doc) => {
-                if (!doc.exists) {
-                  return db.collection("users").doc(user.uid).set({
-                    uid: user.uid,
-                    name: user.displayName,
-                    email: user.email,
-                    avatar: user.photoURL,
-                    createdAt: new Date(),
-                  });
-                }
-              })
-              .then(() => {
-                alert("Login success: " + user.email);
-              });
-          })
-          .catch((error) => {
-            console.error(error);
-            alert(error.message);
-          });
+      function hideAlert() {
+        document.getElementById("alertBox").className = "d-none";
+      }
+
+      function errMsg(code) {
+        return ({
+          "auth/user-not-found":       "Tài khoản không tồn tại!",
+          "auth/wrong-password":       "Sai mật khẩu!",
+          "auth/invalid-credential":   "Email hoặc mật khẩu không đúng!",
+          "auth/email-already-in-use": "Email này đã được đăng ký!",
+          "auth/invalid-email":        "Email không hợp lệ!",
+          "auth/weak-password":        "Mật khẩu quá yếu (ít nhất 6 ký tự)!",
+          "auth/too-many-requests":    "Quá nhiều lần thử. Thử lại sau!",
+          "auth/popup-closed-by-user": "Bạn đã đóng cửa sổ đăng nhập.",
+        })[code] || "Đã xảy ra lỗi. Vui lòng thử lại!";
+      }
+
+      // ─── ĐĂNG NHẬP ─────────────────────────────────────────────────────────
+      document.getElementById("loginBtn").addEventListener("click", async () => {
+        const email    = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value.trim();
+        if (!email || !password) return showAlert("Vui lòng nhập đầy đủ thông tin!", "warning");
+        hideAlert();
+        setLoading("loginBtn", "loginSpinner", true);
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
+          window.location.href = "chat.html";
+        } catch (err) {
+          showAlert(errMsg(err.code));
+          setLoading("loginBtn", "loginSpinner", false);
+        }
+      });
+
+      // Enter key trên form login
+      ["loginEmail", "loginPassword"].forEach((id) => {
+        document.getElementById(id).addEventListener("keydown", (e) => {
+          if (e.key === "Enter") document.getElementById("loginBtn").click();
+        });
+      });
+
+      // ─── ĐĂNG KÝ ───────────────────────────────────────────────────────────
+      document.getElementById("registerBtn").addEventListener("click", async () => {
+        const username = document.getElementById("regUsername").value.trim();
+        const email    = document.getElementById("regEmail").value.trim();
+        const password = document.getElementById("regPassword").value.trim();
+        if (!username || !email || !password) return showAlert("Vui lòng nhập đầy đủ thông tin!", "warning");
+        if (password.length < 6) return showAlert("Mật khẩu phải có ít nhất 6 ký tự!", "warning");
+        hideAlert();
+        setLoading("registerBtn", "registerSpinner", true);
+        try {
+          const { user } = await createUserWithEmailAndPassword(auth, email, password);
+          await updateProfile(user, { displayName: username });
+          await ensureUserDoc(user, { username });
+          window.location.href = "chat.html";
+        } catch (err) {
+          showAlert(errMsg(err.code));
+          setLoading("registerBtn", "registerSpinner", false);
+        }
+      });
+
+      // ─── GOOGLE LOGIN ───────────────────────────────────────────────────────
+      const provider = new GoogleAuthProvider();
+      document.getElementById("googleBtn").addEventListener("click", async () => {
+        hideAlert();
+        try {
+          const { user } = await signInWithPopup(auth, provider);
+          await ensureUserDoc(user);
+          window.location.href = "chat.html";
+        } catch (err) {
+          if (err.code !== "auth/popup-closed-by-user") showAlert(errMsg(err.code));
+        }
       });
     </script>
   </body>
