@@ -9,15 +9,16 @@ import { getFirestore }   from "https://www.gstatic.com/firebasejs/10.12.2/fireb
 import { getDatabase }    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getStorage }     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-const firebaseConfig = { 
-  apiKey : "AIzaSyAs1LEj2WXO-6MvS7v2uWg5nPzVsqjbVf0" , 
-  authDomain : "crud-3fd86.firebaseapp.com" , 
-  databaseURL : "https://crud-3fd86-default-rtdb.firebaseio.com" , 
-  projectId : "crud-3fd86" , 
-  storageBucket : "crud-3fd86.firebasestorage.app" , 
-  messagingSenderId : "663063195093" , 
-  appId : "1:663063195093:web:5d892cb09a9d2016c7e15c" , 
-  measurementId : "G-579FGCK6TP" 
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBVbNvpjsSjSyGTn5Kvk5iaAi0S2KvF5Ks",
+  authDomain: "jsi04-c3a8c.firebaseapp.com",
+  databaseURL: "https://jsi04-c3a8c-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "jsi04-c3a8c",
+  storageBucket: "jsi04-c3a8c.firebasestorage.app",
+  messagingSenderId: "241743024495",
+  appId: "1:241743024495:web:31c9c9cf6cc87fb757d89a",
+  measurementId: "G-67CWVS1Y02"
 };
 
 const app = initializeApp(firebaseConfig);
